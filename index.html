@@ -75,25 +75,39 @@
 </head>
 <body>
   <div class="container">
-    <h1>Buscar CPF</h1>
-    <input type="text" id="cpf" placeholder="Digite o CPF (somente números)">
+    <h1>Buscar Pesquisador</h1>
+    <input type="text" id="cpf" placeholder="Digite o CPF (somente números)" maxlength="11">
     <button onclick="buscar()">Buscar</button>
     <div id="resultado"></div>
   </div>
 
   <script>
+    // Função para formatar CPF
+    function formatarCPF(cpf) {
+      return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+    }
+
     async function buscar() {
-      const cpf = document.getElementById("cpf").value.trim();
+      const cpfInput = document.getElementById("cpf");
+      let cpf = cpfInput.value.trim().replace(/\D/g, '');
       const resultadoDiv = document.getElementById("resultado");
 
-      if (!cpf) {
-        resultadoDiv.innerHTML = '<p class="erro">❌ Por favor, digite um CPF.</p>';
+      // Aplica máscara de CPF
+      if (cpf.length === 11) {
+        cpfInput.value = formatarCPF(cpf);
+      }
+
+      if (!cpf || cpf.length !== 11) {
+        resultadoDiv.innerHTML = '<p class="erro">❌ Por favor, digite um CPF válido (11 dígitos).</p>';
         return;
       }
 
-      resultadoDiv.innerHTML = "🔎 Buscando...";
+      resultadoDiv.innerHTML = "🔎 Buscando pesquisador...";
 
-      const url = "https://script.google.com/macros/s/AKfycbxrDiAOR5_Ifvl4unNx64qWqtGUXxypwzVkuRw2dm3WugUKq6341UObT5Lhu-vGYtc1/exec?cpf=" + encodeURIComponent(cpf);
+      // URL do Google Apps Script que acessará a planilha
+      const scriptUrl = "https://script.google.com/macros/s/AKfycbxrDiAOR5_Ifvl4unNx64qWqtGUXxypwzVkuRw2dm3WugUKq6341UObT5Lhu-vGYtc1/exec";
+      
+      const url = `${scriptUrl}?planilhaId=1J9yHiKY0BsJYCqKsPh7WESJ6d7MlDTorfYeJYx4ObFA&aba=Pesquisador&cpf=${encodeURIComponent(cpf)}`;
 
       try {
         const res = await fetch(url);
@@ -103,15 +117,32 @@
           resultadoDiv.innerHTML = `<p class="erro">❌ ${data.erro}</p>`;
         } else {
           resultadoDiv.innerHTML = `
-            <p class="sucesso">✅ <strong>Nome:</strong> ${data.nome}</p>
-            <p class="sucesso">🏢 <strong>Departamento:</strong> ${data.departamento}</p>
+            <p class="sucesso">✅ <strong>Nome:</strong> ${data.nome || 'Não encontrado'}</p>
+            <p class="sucesso">🏢 <strong>Departamento:</strong> ${data.departamento || 'Não informado'}</p>
+            <p class="sucesso">📧 <strong>Email:</strong> ${data.email || 'Não informado'}</p>
           `;
         }
       } catch (err) {
-        resultadoDiv.innerHTML = '<p class="erro">⚠️ Erro ao buscar dados.</p>';
-        console.error(err);
+        resultadoDiv.innerHTML = '<p class="erro">⚠️ Erro ao buscar dados. Tente novamente.</p>';
+        console.error("Erro na busca:", err);
       }
     }
+
+    // Adiciona máscara de CPF enquanto digita
+    document.getElementById("cpf").addEventListener("input", function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length > 11) {
+        value = value.substring(0, 11);
+      }
+      e.target.value = value;
+    });
+
+    // Permite buscar com Enter
+    document.getElementById("cpf").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        buscar();
+      }
+    });
   </script>
 </body>
 </html>
