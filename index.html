@@ -195,8 +195,8 @@
   <script>
     // Configurações
     const config = {
-      scriptUrl: "AKfycbxrDiAOR5_Ifvl4unNx64qWqtGUXxypwzVkuRw2dm3WugUKq6341UObT5Lhu-vGYtc1",
-      corsProxy: "https://cors-anywhere.herokuapp.com/"
+      scriptId: "AKfycbxrDiAOR5_Ifvl4unNx64qWqtGUXxypwzVkuRw2dm3WugUKq6341UObT5Lhu-vGYtc1",
+      corsProxy: "https://api.allorigins.win/raw?url="
     };
     
     // Elementos DOM
@@ -266,18 +266,10 @@
       showLoading();
       
       try {
-        // Tentativa 1: Usando proxy CORS
-        let response = await fetchWithTimeout(`${config.corsProxy}https://script.google.com/macros/s/${config.scriptUrl}/exec?cpf=${cpf}`, {
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-          }
-        });
+        // URL do Google Apps Script com proxy CORS
+        const url = `${config.corsProxy}https://script.google.com/macros/s/${config.scriptId}/exec?cpf=${cpf}`;
         
-        // Se o proxy falhar, tentar diretamente (pode funcionar em alguns ambientes)
-        if (!response.ok) {
-          response = await fetchWithTimeout(`https://script.google.com/macros/s/${config.scriptUrl}/exec?cpf=${cpf}`);
-        }
-        
+        const response = await fetchWithTimeout(url);
         const data = await response.json();
         
         if (data.erro) {
