@@ -16,14 +16,14 @@
       --gray: #bdc3c7;
       --dark: #34495e;
     }
-    
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
       font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
     }
-    
+
     body {
       background-color: #f8f9fa;
       display: flex;
@@ -32,7 +32,7 @@
       min-height: 100vh;
       padding: 20px;
     }
-    
+
     .card {
       width: 100%;
       max-width: 500px;
@@ -41,34 +41,34 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
       overflow: hidden;
     }
-    
+
     .card-header {
       background: linear-gradient(135deg, var(--secondary), var(--dark));
       color: white;
       padding: 25px;
       text-align: center;
     }
-    
+
     .card-title {
       font-size: 1.8rem;
       font-weight: 500;
       margin-bottom: 8px;
     }
-    
+
     .card-subtitle {
       font-size: 1rem;
       opacity: 0.9;
       font-weight: 400;
     }
-    
+
     .card-body {
       padding: 30px;
     }
-    
+
     .form-group {
       margin-bottom: 24px;
     }
-    
+
     .form-label {
       display: block;
       margin-bottom: 8px;
@@ -76,7 +76,7 @@
       color: var(--dark);
       font-weight: 500;
     }
-    
+
     .form-control {
       width: 100%;
       padding: 14px 16px;
@@ -85,13 +85,13 @@
       font-size: 1rem;
       transition: all 0.3s ease;
     }
-    
+
     .form-control:focus {
       border-color: var(--primary);
       box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.2);
       outline: none;
     }
-    
+
     .btn {
       width: 100%;
       padding: 15px;
@@ -108,17 +108,17 @@
       justify-content: center;
       gap: 8px;
     }
-    
+
     .btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 5px 15px rgba(41, 128, 185, 0.3);
     }
-    
+
     .btn-clear {
       background: var(--gray);
       margin-top: 10px;
     }
-    
+
     .result-container {
       margin-top: 28px;
       padding: 20px;
@@ -126,24 +126,24 @@
       background-color: #f8fafb;
       animation: fadeIn 0.4s ease-out;
     }
-    
+
     .result-item {
       margin-bottom: 12px;
       display: flex;
       align-items: center;
     }
-    
+
     .result-icon {
       margin-right: 12px;
       font-size: 1.2rem;
     }
-    
+
     .result-label {
       font-weight: 600;
       color: var(--dark);
       min-width: 120px;
     }
-    
+
     .alert {
       padding: 16px;
       border-radius: 10px;
@@ -152,25 +152,25 @@
       align-items: center;
       gap: 12px;
     }
-    
+
     .alert-error {
       background-color: #fef0f0;
       border-left: 4px solid var(--error);
       color: var(--error);
     }
-    
+
     .alert-success {
       background-color: #f0f9f5;
       border-left: 4px solid var(--success);
       color: var(--dark);
     }
-    
+
     .alert-loading {
       background-color: #f5f9ff;
       border-left: 4px solid var(--primary);
       color: var(--dark);
     }
-    
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
@@ -183,44 +183,37 @@
       <h1 class="card-title">Consulta de Pesquisadores</h1>
       <p class="card-subtitle">Sistema de busca por CPF</p>
     </div>
-    
+
     <div class="card-body">
       <div class="form-group">
         <label for="cpf" class="form-label">CPF do Pesquisador</label>
         <input type="text" id="cpf" class="form-control" placeholder="Digite o CPF (com ou sem formatação)" maxlength="14">
       </div>
-      
+
       <button class="btn" id="buscarBtn">
         <span>🔍</span> Buscar Pesquisador
       </button>
-      
+
       <button class="btn btn-clear" id="limparBtn">
         <span>🗑️</span> Limpar
       </button>
-      
+
       <div id="resultado"></div>
     </div>
   </div>
 
   <script>
-    // Configurações
     const config = {
       scriptId: "AKfycbxrDiAOR5_Ifvl4unNx64qWqtGUXxypwzVkuRw2dm3WugUKq6341UObT5Lhu-vGYtc1"
-      corsProxy: "https://api.allorigins.win/get?url="
     };
-    
-    // Elementos DOM
+
     const cpfInput = document.getElementById("cpf");
     const buscarBtn = document.getElementById("buscarBtn");
     const limparBtn = document.getElementById("limparBtn");
     const resultadoDiv = document.getElementById("resultado");
-    
-    // Aplicar máscara de CPF
-    IMask(cpfInput, {
-      mask: '000.000.000-00'
-    });
-    
-    // Formatar CPF
+
+    IMask(cpfInput, { mask: '000.000.000-00' });
+
     function formatarCPF(cpf) {
       cpf = cpf.replace(/\D/g, '');
       if (cpf.length > 9) {
@@ -228,28 +221,22 @@
       }
       return cpf;
     }
-    
-    // Validar CPF
+
     function validarCPF(cpf) {
       cpf = cpf.replace(/\D/g, '');
       if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
-
       let soma = 0;
       for (let i = 0; i < 9; i++) soma += parseInt(cpf.charAt(i)) * (10 - i);
       let resto = 11 - (soma % 11);
-      if (resto === 10 || resto === 11) resto = 0;
+      if (resto >= 10) resto = 0;
       if (resto !== parseInt(cpf.charAt(9))) return false;
-
       soma = 0;
       for (let i = 0; i < 10; i++) soma += parseInt(cpf.charAt(i)) * (11 - i);
       resto = 11 - (soma % 11);
-      if (resto === 10 || resto === 11) resto = 0;
-      if (resto !== parseInt(cpf.charAt(10))) return false;
-
-      return true;
+      if (resto >= 10) resto = 0;
+      return resto === parseInt(cpf.charAt(10));
     }
-    
-    // Mostrar loading
+
     function showLoading() {
       resultadoDiv.innerHTML = `
         <div class="alert alert-loading">
@@ -258,8 +245,7 @@
         </div>
       `;
     }
-    
-    // Mostrar erro
+
     function showError(message) {
       resultadoDiv.innerHTML = `
         <div class="alert alert-error">
@@ -268,8 +254,7 @@
         </div>
       `;
     }
-    
-    // Mostrar resultados
+
     function showResults(data) {
       resultadoDiv.innerHTML = `
         <div class="alert alert-success">
@@ -286,40 +271,27 @@
         </div>
       `;
     }
-    
-    // Buscar pesquisador
+
     async function buscarPesquisador() {
       const cpf = cpfInput.value.replace(/\D/g, '');
-      
-      if (cpf.length !== 11) {
-        showError("O CPF deve conter exatamente 11 dígitos numéricos.");
-        return;
-      }
-      
       if (!validarCPF(cpf)) {
         showError("O CPF informado é inválido.");
         return;
       }
-      
+
       cpfInput.value = formatarCPF(cpf);
       showLoading();
-      
+
       try {
-        const url = encodeURIComponent(`https://script.google.com/macros/s/${config.scriptId}/exec?cpf=${cpf}`);
-        const proxyUrl = `${config.corsProxy}${url}`;
-        const response = await fetchWithTimeout(proxyUrl);
-        
+        const url = `https://script.google.com/macros/s/${config.scriptId}/exec?cpf=${cpf}`;
+        const response = await fetchWithTimeout(url);
+
         if (!response.ok) {
-          if (response.status === 429) {
-            showError("Muitas requisições. Tente novamente em alguns minutos.");
-          } else {
-            throw new Error("Erro na resposta do servidor");
-          }
+          throw new Error("Erro na resposta do servidor");
         }
-        
-        const data = await response.json();
-        const responseData = JSON.parse(data.contents);
-        
+
+        const responseData = await response.json();
+
         if (responseData.erro) {
           showError(responseData.erro);
         } else {
@@ -330,30 +302,26 @@
         showError("Erro ao conectar com o servidor. Tente novamente mais tarde.");
       }
     }
-    
-    // Fetch com timeout
+
     async function fetchWithTimeout(url, options = {}, timeout = 15000) {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), timeout);
-      
+
       const response = await fetch(url, {
         ...options,
         signal: controller.signal
       });
-      
+
       clearTimeout(id);
       return response;
     }
-    
-    // Event listeners
+
     cpfInput.addEventListener("keypress", function(e) {
-      if (e.key === "Enter") {
-        buscarPesquisador();
-      }
+      if (e.key === "Enter") buscarPesquisador();
     });
-    
+
     buscarBtn.addEventListener("click", buscarPesquisador);
-    
+
     limparBtn.addEventListener("click", () => {
       cpfInput.value = "";
       resultadoDiv.innerHTML = "";
