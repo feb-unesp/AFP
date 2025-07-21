@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Consulta de Pesquisadores</title>
+  <script src="https://unpkg.com/imask"></script>
   <style>
     :root {
       --primary: #3498db;
@@ -113,6 +114,11 @@
       box-shadow: 0 5px 15px rgba(41, 128, 185, 0.3);
     }
     
+    .btn-clear {
+      background: var(--gray);
+      margin-top: 10px;
+    }
+    
     .result-container {
       margin-top: 28px;
       padding: 20px;
@@ -188,6 +194,10 @@
         <span>🔍</span> Buscar Pesquisador
       </button>
       
+      <button class="btn btn-clear" id="limparBtn">
+        <span>🗑️</span> Limpar
+      </button>
+      
       <div id="resultado"></div>
     </div>
   </div>
@@ -195,14 +205,20 @@
   <script>
     // Configurações
     const config = {
-      scriptId: "AKfycbxrDiAOR5_Ifvl4unNx64qWqtGUXxypwzVkuRw2dm3WugUKq6341UObT5Lhu-vGYtc1",
+      scriptId: "SEU_NOVO_SCRIPT_ID", // Substitua pelo ID do Google Apps Script
       corsProxy: "https://api.allorigins.win/get?url="
     };
     
     // Elementos DOM
     const cpfInput = document.getElementById("cpf");
     const buscarBtn = document.getElementById("buscarBtn");
+    const limparBtn = document.getElementById("limparBtn");
     const resultadoDiv = document.getElementById("resultado");
+    
+    // Aplicar máscara de CPF
+    IMask(cpfInput, {
+      mask: '000.000.000-00'
+    });
     
     // Formatar CPF
     function formatarCPF(cpf) {
@@ -211,6 +227,26 @@
         return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
       }
       return cpf;
+    }
+    
+    // Validar CPF
+    function validarCPF(cpf) {
+      cpf = cpf.replace(/\D/g, '');
+      if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+
+      let soma = 0;
+      for (let i = 0; i < 9; i++) soma += parseInt(cpf.charAt(i)) * (10 - i);
+      let resto = 11 - (soma % 11);
+      if (resto === 10 || resto === 11) resto = 0;
+      if (resto !== parseInt(cpf.charAt(9))) return false;
+
+      soma = 0;
+      for (let i = 0; i < 10; i++) soma += parseInt(cpf.charAt(i)) * (11 - i);
+      resto = 11 - (soma % 11);
+      if (resto === 10 || resto === 11) resto = 0;
+      if (resto !== parseInt(cpf.charAt(10))) return false;
+
+      return true;
     }
     
     // Mostrar loading
@@ -255,30 +291,33 @@
     async function buscarPesquisador() {
       const cpf = cpfInput.value.replace(/\D/g, '');
       
-      // Validação
       if (cpf.length !== 11) {
         showError("O CPF deve conter exatamente 11 dígitos numéricos.");
         return;
       }
       
-      // Aplica formatação
+      if (!validarCPF(cpf)) {
+        showError("O CPF informado é inválido.");
+        return;
+      }
+      
       cpfInput.value = formatarCPF(cpf);
       showLoading();
       
       try {
-        // URL do Google Apps Script com proxy CORS
         const url = encodeURIComponent(`https://script.google.com/macros/s/${config.scriptId}/exec?cpf=${cpf}`);
         const proxyUrl = `${config.corsProxy}${url}`;
-        
         const response = await fetchWithTimeout(proxyUrl);
         
         if (!response.ok) {
-          throw new Error("Erro na resposta do servidor");
+          if (response.status === 429) {
+            showError("Muitas requisições. Tente novamente em alguns minutos.");
+          } else {
+            throw new Error("Erro na resposta do servidor");
+          }
         }
         
         const data = await response.json();
-        
-        // O AllOrigins retorna o conteúdo dentro da propriedade 'contents'
         const responseData = JSON.parse(data.contents);
         
         if (responseData.erro) {
@@ -293,7 +332,7 @@
     }
     
     // Fetch com timeout
-    async function fetchWithTimeout(url, options = {}, timeout = 8000) {
+    async function fetchWithTimeout(url, options = {}, timeout = 15000) {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), timeout);
       
@@ -307,12 +346,6 @@
     }
     
     // Event listeners
-    cpfInput.addEventListener("input", function(e) {
-      let value = e.target.value.replace(/\D/g, '');
-      if (value.length > 11) value = value.substring(0, 11);
-      e.target.value = formatarCPF(value);
-    });
-    
     cpfInput.addEventListener("keypress", function(e) {
       if (e.key === "Enter") {
         buscarPesquisador();
@@ -320,6 +353,11 @@
     });
     
     buscarBtn.addEventListener("click", buscarPesquisador);
+    
+    limparBtn.addEventListener("click", () => {
+      cpfInput.value = "";
+      resultadoDiv.innerHTML = "";
+    });
   </script>
 </body>
 </html>
