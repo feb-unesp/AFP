@@ -196,7 +196,7 @@
     // Configurações
     const config = {
       scriptId: "AKfycbxrDiAOR5_Ifvl4unNx64qWqtGUXxypwzVkuRw2dm3WugUKq6341UObT5Lhu-vGYtc1",
-      corsProxy: "https://api.allorigins.win/raw?url="
+      corsProxy: "https://api.allorigins.win/get?url="
     };
     
     // Elementos DOM
@@ -267,15 +267,24 @@
       
       try {
         // URL do Google Apps Script com proxy CORS
-        const url = `${config.corsProxy}https://script.google.com/macros/s/${config.scriptId}/exec?cpf=${cpf}`;
+        const url = encodeURIComponent(`https://script.google.com/macros/s/${config.scriptId}/exec?cpf=${cpf}`);
+        const proxyUrl = `${config.corsProxy}${url}`;
         
-        const response = await fetchWithTimeout(url);
+        const response = await fetchWithTimeout(proxyUrl);
+        
+        if (!response.ok) {
+          throw new Error("Erro na resposta do servidor");
+        }
+        
         const data = await response.json();
         
-        if (data.erro) {
-          showError(data.erro);
+        // O AllOrigins retorna o conteúdo dentro da propriedade 'contents'
+        const responseData = JSON.parse(data.contents);
+        
+        if (responseData.erro) {
+          showError(responseData.erro);
         } else {
-          showResults(data);
+          showResults(responseData);
         }
       } catch (error) {
         console.error("Erro na busca:", error);
