@@ -113,10 +113,6 @@
       box-shadow: 0 5px 15px rgba(41, 128, 185, 0.3);
     }
     
-    .btn:active {
-      transform: translateY(0);
-    }
-    
     .result-container {
       margin-top: 28px;
       padding: 20px;
@@ -173,21 +169,6 @@
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    
-    /* Responsivo */
-    @media (max-width: 600px) {
-      .card {
-        border-radius: 12px;
-      }
-      
-      .card-header {
-        padding: 20px;
-      }
-      
-      .card-body {
-        padding: 24px;
-      }
-    }
   </style>
 </head>
 <body>
@@ -203,7 +184,7 @@
         <input type="text" id="cpf" class="form-control" placeholder="Digite o CPF (com ou sem formatação)" maxlength="14">
       </div>
       
-      <button class="btn" onclick="buscar()">
+      <button class="btn" onclick="buscarPesquisador()">
         <span>🔍</span> Buscar Pesquisador
       </button>
       
@@ -212,7 +193,7 @@
   </div>
 
   <script>
-    // URL do Google Apps Script
+    // URL do seu Google Apps Script
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxrDiAOR5_Ifvl4unNx64qWqtGUXxypwzVkuRw2dm3WugUKq6341UObT5Lhu-vGYtc1/exec";
     
     // Formatar CPF
@@ -220,111 +201,109 @@
       cpf = cpf.replace(/\D/g, '');
       if (cpf.length > 9) {
         return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-      } else if (cpf.length > 6) {
-        return cpf.replace(/(\d{3})(\d{3})(\d{3})/, "$1.$2.$3");
-      } else if (cpf.length > 3) {
-        return cpf.replace(/(\d{3})(\d{3})/, "$1.$2");
       }
       return cpf;
     }
     
-    // Função para lidar com a resposta JSONP
-    function handleJsonpResponse(data) {
-      const resultadoDiv = document.getElementById("resultado");
-      
-      if (data.erro) {
-        resultadoDiv.innerHTML = `
-          <div class="alert alert-error">
-            <span>❌</span>
-            <div>${data.erro}</div>
-          </div>
-        `;
-      } else {
-        resultadoDiv.innerHTML = `
-          <div class="alert alert-success">
-            <span>✅</span>
-            <div>
-              <div class="result-item">
-                <span class="result-icon">👤</span>
-                <span class="result-label">Nome:</span>
-                <span>${data.nome}</span>
-              </div>
-              <div class="result-item">
-                <span class="result-icon">🏢</span>
-                <span class="result-label">Departamento:</span>
-                <span>${data.departamento}</span>
-              </div>
-            </div>
-          </div>
-        `;
-      }
-    }
-    
-    // Buscar pesquisador usando JSONP
-    function buscar() {
+    // Função principal de busca
+    function buscarPesquisador() {
       const cpfInput = document.getElementById("cpf");
       const cpf = cpfInput.value.replace(/\D/g, '');
       const resultadoDiv = document.getElementById("resultado");
       
       // Validação
       if (cpf.length !== 11) {
-        resultadoDiv.innerHTML = `
-          <div class="alert alert-error">
-            <span>❌</span>
-            <div>O CPF deve conter exatamente 11 dígitos numéricos.</div>
-          </div>
-        `;
+        showError("O CPF deve conter exatamente 11 dígitos numéricos.");
         return;
       }
       
       // Aplica formatação
       cpfInput.value = formatarCPF(cpf);
+      showLoading();
       
-      // Mostra loading
-      resultadoDiv.innerHTML = `
+      // Cria um script temporário para JSONP
+      const callbackName = 'jsonpCallback_' + Date.now();
+      window[callbackName] = function(data) {
+        cleanUpJsonp(callbackName);
+        handleResponse(data);
+      };
+      
+      const script = document.createElement('script');
+      script.src = `${SCRIPT_URL}?cpf=${cpf}&callback=${callbackName}`;
+      script.onerror = () => {
+        cleanUpJsonp(callbackName);
+        showError("Erro ao conectar com o servidor. Tente novamente.");
+      };
+      
+      document.body.appendChild(script);
+      
+      // Timeout para evitar espera infinita
+      setTimeout(() => {
+        if (window[callbackName]) {
+          cleanUpJsonp(callbackName);
+          showError("Tempo limite excedido. Verifique sua conexão e tente novamente.");
+        }
+      }, 8000);
+    }
+    
+    // Funções auxiliares
+    function cleanUpJsonp(callbackName) {
+      delete window[callbackName];
+      const scripts = document.querySelectorAll(`script[src*="${callbackName}"]`);
+      scripts.forEach(script => script.remove());
+    }
+    
+    function handleResponse(data) {
+      const resultadoDiv = document.getElementById("resultado");
+      
+      if (data.erro) {
+        showError(data.erro);
+      } else {
+        resultadoDiv.innerHTML = `
+          <div class="alert alert-success">
+            <div class="result-item">
+              <span class="result-icon">👤</span>
+              <span class="result-label">Nome:</span>
+              <span>${data.nome}</span>
+            </div>
+            <div class="result-item">
+              <span class="result-icon">🏢</span>
+              <span class="result-label">Departamento:</span>
+              <span>${data.departamento}</span>
+            </div>
+          </div>
+        `;
+      }
+    }
+    
+    function showLoading() {
+      document.getElementById("resultado").innerHTML = `
         <div class="alert alert-loading">
           <span>⏳</span>
           <div>Buscando informações do pesquisador...</div>
         </div>
       `;
-      
-      // Cria um script temporário para JSONP
-      const callbackName = 'jsonpCallback_' + Date.now();
-      window[callbackName] = function(data) {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        handleJsonpResponse(data);
-      };
-      
-      const script = document.createElement('script');
-      script.src = `${SCRIPT_URL}?cpf=${cpf}&callback=${callbackName}`;
-      document.body.appendChild(script);
-      
-      // Timeout para erro de rede
-      setTimeout(() => {
-        if (window[callbackName]) {
-          delete window[callbackName];
-          resultadoDiv.innerHTML = `
-            <div class="alert alert-error">
-              <span>⚠️</span>
-              <div>Tempo limite excedido. Tente novamente.</div>
-            </div>
-          `;
-        }
-      }, 10000);
     }
     
-    // Máscara de CPF dinâmica
+    function showError(message) {
+      document.getElementById("resultado").innerHTML = `
+        <div class="alert alert-error">
+          <span>❌</span>
+          <div>${message}</div>
+        </div>
+      `;
+    }
+    
+    // Event listeners
     document.getElementById("cpf").addEventListener("input", function(e) {
       let value = e.target.value.replace(/\D/g, '');
       if (value.length > 11) value = value.substring(0, 11);
       e.target.value = formatarCPF(value);
     });
     
-    // Buscar ao pressionar Enter
     document.getElementById("cpf").addEventListener("keypress", function(e) {
       if (e.key === "Enter") {
-        buscar();
+        buscarPesquisador();
       }
     });
   </script>
