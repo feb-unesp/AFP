@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consulta de Pesquisadores</title>
+  <style>
+    :root {
+      --primary: #3498db;
+      --primary-dark: #2980b9;
+      --secondary: #2c3e50;
+      --success: #2ecc71;
+      --error: #e74c3c;
+      --light: #ecf0f1;
+      --gray: #bdc3c7;
+      --dark: #34495e;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+    }
+    
+    body {
+      background-color: #f8f9fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .card {
+      width: 100%;
+      max-width: 500px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+    
+    .card-header {
+      background: linear-gradient(135deg, var(--secondary), var(--dark));
+      color: white;
+      padding: 25px;
+      text-align: center;
+    }
+    
+    .card-title {
+      font-size: 1.8rem;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    
+    .card-subtitle {
+      font-size: 1rem;
+      opacity: 0.9;
+      font-weight: 400;
+    }
+    
+    .card-body {
+      padding: 30px;
+    }
+    
+    .form-group {
+      margin-bottom: 24px;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+      color: var(--dark);
+      font-weight: 500;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--gray);
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.2);
+      outline: none;
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(41, 128, 185, 0.3);
+    }
+    
+    .btn:active {
+      transform: translateY(0);
+    }
+    
+    .result-container {
+      margin-top: 28px;
+      padding: 20px;
+      border-radius: 10px;
+      background-color: #f8fafb;
+      animation: fadeIn 0.4s ease-out;
+    }
+    
+    .result-item {
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .result-icon {
+      margin-right: 12px;
+      font-size: 1.2rem;
+    }
+    
+    .result-label {
+      font-weight: 600;
+      color: var(--dark);
+      min-width: 120px;
+    }
+    
+    .alert {
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .alert-error {
+      background-color: #fef0f0;
+      border-left: 4px solid var(--error);
+      color: var(--error);
+    }
+    
+    .alert-success {
+      background-color: #f0f9f5;
+      border-left: 4px solid var(--success);
+      color: var(--dark);
+    }
+    
+    .alert-loading {
+      background-color: #f5f9ff;
+      border-left: 4px solid var(--primary);
+      color: var(--dark);
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Responsivo */
+    @media (max-width: 600px) {
+      .card {
+        border-radius: 12px;
+      }
+      
+      .card-header {
+        padding: 20px;
+      }
+      
+      .card-body {
+        padding: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-header">
+      <h1 class="card-title">Consulta de Pesquisadores</h1>
+      <p class="card-subtitle">Sistema de busca por CPF</p>
+    </div>
+    
+    <div class="card-body">
+      <div class="form-group">
+        <label for="cpf" class="form-label">CPF do Pesquisador</label>
+        <input type="text" id="cpf" class="form-control" placeholder="Digite o CPF (com ou sem formatação)" maxlength="14">
+      </div>
+      
+      <button class="btn" onclick="buscar()">
+        <span>🔍</span> Buscar Pesquisador
+      </button>
+      
+      <div id="resultado"></div>
+    </div>
+  </div>
+
+  <script>
+    // URL do Google Apps Script
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxrDiAOR5_Ifvl4unNx64qWqtGUXxypwzVkuRw2dm3WugUKq6341UObT5Lhu-vGYtc1/exec";
+    
+    // Formatar CPF
+    function formatarCPF(cpf) {
+      cpf = cpf.replace(/\D/g, '');
+      if (cpf.length > 9) {
+        return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+      } else if (cpf.length > 6) {
+        return cpf.replace(/(\d{3})(\d{3})(\d{3})/, "$1.$2.$3");
+      } else if (cpf.length > 3) {
+        return cpf.replace(/(\d{3})(\d{3})/, "$1.$2");
+      }
+      return cpf;
+    }
+    
+    // Buscar pesquisador
+    async function buscar() {
+      const cpfInput = document.getElementById("cpf");
+      const cpf = cpfInput.value.replace(/\D/g, '');
+      const resultadoDiv = document.getElementById("resultado");
+      
+      // Validação
+      if (cpf.length !== 11) {
+        resultadoDiv.innerHTML = `
+          <div class="alert alert-error">
+            <span>❌</span>
+            <div>O CPF deve conter exatamente 11 dígitos numéricos.</div>
+          </div>
+        `;
+        return;
+      }
+      
+      // Aplica formatação
+      cpfInput.value = formatarCPF(cpf);
+      
+      // Mostra loading
+      resultadoDiv.innerHTML = `
+        <div class="alert alert-loading">
+          <span>⏳</span>
+          <div>Buscando informações do pesquisador...</div>
+        </div>
+      `;
+      
+      try {
+        const response = await fetch(`${SCRIPT_URL}?cpf=${cpf}`);
+        const data = await response.json();
+        
+        if (data.erro) {
+          resultadoDiv.innerHTML = `
+            <div class="alert alert-error">
+              <span>❌</span>
+              <div>${data.erro}</div>
+            </div>
+          `;
+        } else {
+          resultadoDiv.innerHTML = `
+            <div class="alert alert-success">
+              <span>✅</span>
+              <div>
+                <div class="result-item">
+                  <span class="result-icon">👤</span>
+                  <span class="result-label">Nome:</span>
+                  <span>${data.nome}</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-icon">🏢</span>
+                  <span class="result-label">Departamento:</span>
+                  <span>${data.departamento}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      } catch (error) {
+        resultadoDiv.innerHTML = `
+          <div class="alert alert-error">
+            <span>⚠️</span>
+            <div>Erro ao conectar com o servidor. Tente novamente mais tarde.</div>
+          </div>
+        `;
+        console.error("Erro na busca:", error);
+      }
+    }
+    
+    // Máscara de CPF dinâmica
+    document.getElementById("cpf").addEventListener("input", function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length > 11) value = value.substring(0, 11);
+      e.target.value = formatarCPF(value);
+    });
+    
+    // Buscar ao pressionar Enter
+    document.getElementById("cpf").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        buscar();
+      }
+    });
+  </script>
+</body>
+</html>
