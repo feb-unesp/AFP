@@ -193,10 +193,8 @@
   </div>
 
   <script>
-    // URL do seu Google Apps Script
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxrDiAOR5_Ifvl4unNx64qWqtGUXxypwzVkuRw2dm3WugUKq6341UObT5Lhu-vGYtc1/exec";
     
-    // Formatar CPF
     function formatarCPF(cpf) {
       cpf = cpf.replace(/\D/g, '');
       if (cpf.length > 9) {
@@ -205,75 +203,50 @@
       return cpf;
     }
     
-    // Função principal de busca
     function buscarPesquisador() {
       const cpfInput = document.getElementById("cpf");
       const cpf = cpfInput.value.replace(/\D/g, '');
       const resultadoDiv = document.getElementById("resultado");
       
-      // Validação
+      // Validação básica (mantida igual)
       if (cpf.length !== 11) {
         showError("O CPF deve conter exatamente 11 dígitos numéricos.");
         return;
       }
       
-      // Aplica formatação
       cpfInput.value = formatarCPF(cpf);
       showLoading();
       
-      // Cria um script temporário para JSONP
-      const callbackName = 'jsonpCallback_' + Date.now();
-      window[callbackName] = function(data) {
-        cleanUpJsonp(callbackName);
-        handleResponse(data);
-      };
-      
-      const script = document.createElement('script');
-      script.src = `${SCRIPT_URL}?cpf=${cpf}&callback=${callbackName}`;
-      script.onerror = () => {
-        cleanUpJsonp(callbackName);
-        showError("Erro ao conectar com o servidor. Tente novamente.");
-      };
-      
-      document.body.appendChild(script);
-      
-      // Timeout para evitar espera infinita
-      setTimeout(() => {
-        if (window[callbackName]) {
-          cleanUpJsonp(callbackName);
-          showError("Tempo limite excedido. Verifique sua conexão e tente novamente.");
-        }
-      }, 8000);
-    }
-    
-    // Funções auxiliares
-    function cleanUpJsonp(callbackName) {
-      delete window[callbackName];
-      const scripts = document.querySelectorAll(`script[src*="${callbackName}"]`);
-      scripts.forEach(script => script.remove());
-    }
-    
-    function handleResponse(data) {
-      const resultadoDiv = document.getElementById("resultado");
-      
-      if (data.erro) {
-        showError(data.erro);
-      } else {
-        resultadoDiv.innerHTML = `
-          <div class="alert alert-success">
-            <div class="result-item">
-              <span class="result-icon">👤</span>
-              <span class="result-label">Nome:</span>
-              <span>${data.nome}</span>
-            </div>
-            <div class="result-item">
-              <span class="result-icon">🏢</span>
-              <span class="result-label">Departamento:</span>
-              <span>${data.departamento}</span>
-            </div>
-          </div>
-        `;
-      }
+      // Usando Fetch API com tratamento de CORS
+      fetch(`${SCRIPT_URL}?cpf=${cpf}`)
+        .then(response => {
+          if (!response.ok) throw new Error("Erro na rede");
+          return response.json();
+        })
+        .then(data => {
+          if (data.erro) {
+            showError(data.erro);
+          } else {
+            resultadoDiv.innerHTML = `
+              <div class="alert alert-success">
+                <div class="result-item">
+                  <span class="result-icon">👤</span>
+                  <span class="result-label">Nome:</span>
+                  <span>${data.nome}</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-icon">🏢</span>
+                  <span class="result-label">Departamento:</span>
+                  <span>${data.departamento}</span>
+                </div>
+              </div>
+            `;
+          }
+        })
+        .catch(error => {
+          showError("Erro ao buscar dados. Tente novamente.");
+          console.error("Erro:", error);
+        });
     }
     
     function showLoading() {
@@ -294,7 +267,7 @@
       `;
     }
     
-    // Event listeners
+    // Event listeners (mantidos iguais)
     document.getElementById("cpf").addEventListener("input", function(e) {
       let value = e.target.value.replace(/\D/g, '');
       if (value.length > 11) value = value.substring(0, 11);
