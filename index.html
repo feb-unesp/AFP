@@ -9,7 +9,7 @@
       --primary: #3498db;
       --primary-dark: #2980b9;
       --secondary: #2c3e50;
-      --success: #2ecc71;
+      --success: #27ae60;
       --error: #e74c3c;
       --light: #ecf0f1;
       --gray: #bdc3c7;
@@ -184,7 +184,7 @@
         <input type="text" id="cpf" class="form-control" placeholder="Digite o CPF (com ou sem formatação)" maxlength="14">
       </div>
       
-      <button id="btnBuscar" class="btn">
+      <button class="btn" id="buscarBtn">
         <span>🔍</span> Buscar Pesquisador
       </button>
       
@@ -193,8 +193,18 @@
   </div>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxrDiAOR5_Ifvl4unNx64qWqtGUXxypwzVkuRw2dm3WugUKq6341UObT5Lhu-vGYtc1/exec";
+    // Configurações
+    const config = {
+      scriptUrl: "AKfycbxrDiAOR5_Ifvl4unNx64qWqtGUXxypwzVkuRw2dm3WugUKq6341UObT5Lhu-vGYtc1",
+      corsProxy: "https://cors-anywhere.herokuapp.com/"
+    };
     
+    // Elementos DOM
+    const cpfInput = document.getElementById("cpf");
+    const buscarBtn = document.getElementById("buscarBtn");
+    const resultadoDiv = document.getElementById("resultado");
+    
+    // Formatar CPF
     function formatarCPF(cpf) {
       cpf = cpf.replace(/\D/g, '');
       if (cpf.length > 9) {
@@ -203,89 +213,9 @@
       return cpf;
     }
     
-    function validarCPF(cpf) {
-      cpf = cpf.replace(/\D/g, '');
-      if (cpf.length !== 11) return false;
-      
-      // Verifica dígitos repetidos
-      if (/^(\d)\1{10}$/.test(cpf)) return false;
-      
-      // Validação dos dígitos verificadores
-      let soma = 0;
-      for (let i = 0; i < 9; i++) {
-        soma += parseInt(cpf.charAt(i)) * (10 - i);
-      }
-      let resto = 11 - (soma % 11);
-      const digito1 = resto > 9 ? 0 : resto;
-      
-      soma = 0;
-      for (let i = 0; i < 10; i++) {
-        soma += parseInt(cpf.charAt(i)) * (11 - i);
-      }
-      resto = 11 - (soma % 11);
-      const digito2 = resto > 9 ? 0 : resto;
-      
-      return parseInt(cpf.charAt(9)) === digito1 && parseInt(cpf.charAt(10)) === digito2;
-    }
-    
-    function buscarPesquisador() {
-      const cpfInput = document.getElementById("cpf");
-      const cpf = cpfInput.value.replace(/\D/g, '');
-      const resultadoDiv = document.getElementById("resultado");
-      
-      if (!validarCPF(cpf)) {
-        showError("CPF inválido. Digite um CPF válido com 11 dígitos.");
-        return;
-      }
-      
-      cpfInput.value = formatarCPF(cpf);
-      showLoading();
-      
-      // Cria um callback único para JSONP
-      const callbackName = 'jsonpCallback_' + Date.now();
-      window[callbackName] = function(data) {
-        delete window[callbackName];
-        handleResponse(data);
-      };
-      
-      // Cria o script tag para JSONP
-      const script = document.createElement('script');
-      script.src = `${SCRIPT_URL}?cpf=${cpf}&callback=${callbackName}`;
-      
-      script.onerror = function() {
-        delete window[callbackName];
-        showError("Erro ao conectar com o servidor. Tente novamente.");
-        script.remove();
-      };
-      
-      document.body.appendChild(script);
-    }
-    
-    function handleResponse(data) {
-      const resultadoDiv = document.getElementById("resultado");
-      
-      if (data.erro) {
-        showError(data.erro);
-      } else {
-        resultadoDiv.innerHTML = `
-          <div class="alert alert-success">
-            <div class="result-item">
-              <span class="result-icon">👤</span>
-              <span class="result-label">Nome:</span>
-              <span>${data.nome || 'Não informado'}</span>
-            </div>
-            <div class="result-item">
-              <span class="result-icon">🏢</span>
-              <span class="result-label">Departamento:</span>
-              <span>${data.departamento || 'Não informado'}</span>
-            </div>
-          </div>
-        `;
-      }
-    }
-    
+    // Mostrar loading
     function showLoading() {
-      document.getElementById("resultado").innerHTML = `
+      resultadoDiv.innerHTML = `
         <div class="alert alert-loading">
           <span>⏳</span>
           <div>Buscando informações do pesquisador...</div>
@@ -293,8 +223,9 @@
       `;
     }
     
+    // Mostrar erro
     function showError(message) {
-      document.getElementById("resultado").innerHTML = `
+      resultadoDiv.innerHTML = `
         <div class="alert alert-error">
           <span>❌</span>
           <div>${message}</div>
@@ -302,20 +233,92 @@
       `;
     }
     
+    // Mostrar resultados
+    function showResults(data) {
+      resultadoDiv.innerHTML = `
+        <div class="alert alert-success">
+          <div class="result-item">
+            <span class="result-icon">👤</span>
+            <span class="result-label">Nome:</span>
+            <span>${data.nome}</span>
+          </div>
+          <div class="result-item">
+            <span class="result-icon">🏢</span>
+            <span class="result-label">Departamento:</span>
+            <span>${data.departamento}</span>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Buscar pesquisador
+    async function buscarPesquisador() {
+      const cpf = cpfInput.value.replace(/\D/g, '');
+      
+      // Validação
+      if (cpf.length !== 11) {
+        showError("O CPF deve conter exatamente 11 dígitos numéricos.");
+        return;
+      }
+      
+      // Aplica formatação
+      cpfInput.value = formatarCPF(cpf);
+      showLoading();
+      
+      try {
+        // Tentativa 1: Usando proxy CORS
+        let response = await fetchWithTimeout(`${config.corsProxy}https://script.google.com/macros/s/${config.scriptUrl}/exec?cpf=${cpf}`, {
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        
+        // Se o proxy falhar, tentar diretamente (pode funcionar em alguns ambientes)
+        if (!response.ok) {
+          response = await fetchWithTimeout(`https://script.google.com/macros/s/${config.scriptUrl}/exec?cpf=${cpf}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.erro) {
+          showError(data.erro);
+        } else {
+          showResults(data);
+        }
+      } catch (error) {
+        console.error("Erro na busca:", error);
+        showError("Erro ao conectar com o servidor. Tente novamente mais tarde.");
+      }
+    }
+    
+    // Fetch com timeout
+    async function fetchWithTimeout(url, options = {}, timeout = 8000) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeout);
+      
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+      
+      clearTimeout(id);
+      return response;
+    }
+    
     // Event listeners
-    document.getElementById("cpf").addEventListener("input", function(e) {
+    cpfInput.addEventListener("input", function(e) {
       let value = e.target.value.replace(/\D/g, '');
       if (value.length > 11) value = value.substring(0, 11);
       e.target.value = formatarCPF(value);
     });
     
-    document.getElementById("cpf").addEventListener("keypress", function(e) {
+    cpfInput.addEventListener("keypress", function(e) {
       if (e.key === "Enter") {
         buscarPesquisador();
       }
     });
     
-    document.getElementById("btnBuscar").addEventListener("click", buscarPesquisador);
+    buscarBtn.addEventListener("click", buscarPesquisador);
   </script>
 </body>
 </html>
