@@ -228,8 +228,40 @@
       return cpf;
     }
     
-    // Buscar pesquisador
-    async function buscar() {
+    // Função para lidar com a resposta JSONP
+    function handleJsonpResponse(data) {
+      const resultadoDiv = document.getElementById("resultado");
+      
+      if (data.erro) {
+        resultadoDiv.innerHTML = `
+          <div class="alert alert-error">
+            <span>❌</span>
+            <div>${data.erro}</div>
+          </div>
+        `;
+      } else {
+        resultadoDiv.innerHTML = `
+          <div class="alert alert-success">
+            <span>✅</span>
+            <div>
+              <div class="result-item">
+                <span class="result-icon">👤</span>
+                <span class="result-label">Nome:</span>
+                <span>${data.nome}</span>
+              </div>
+              <div class="result-item">
+                <span class="result-icon">🏢</span>
+                <span class="result-label">Departamento:</span>
+                <span>${data.departamento}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+    
+    // Buscar pesquisador usando JSONP
+    function buscar() {
       const cpfInput = document.getElementById("cpf");
       const cpf = cpfInput.value.replace(/\D/g, '');
       const resultadoDiv = document.getElementById("resultado");
@@ -256,45 +288,30 @@
         </div>
       `;
       
-      try {
-        const response = await fetch(`${SCRIPT_URL}?cpf=${cpf}`);
-        const data = await response.json();
-        
-        if (data.erro) {
+      // Cria um script temporário para JSONP
+      const callbackName = 'jsonpCallback_' + Date.now();
+      window[callbackName] = function(data) {
+        delete window[callbackName];
+        document.body.removeChild(script);
+        handleJsonpResponse(data);
+      };
+      
+      const script = document.createElement('script');
+      script.src = `${SCRIPT_URL}?cpf=${cpf}&callback=${callbackName}`;
+      document.body.appendChild(script);
+      
+      // Timeout para erro de rede
+      setTimeout(() => {
+        if (window[callbackName]) {
+          delete window[callbackName];
           resultadoDiv.innerHTML = `
             <div class="alert alert-error">
-              <span>❌</span>
-              <div>${data.erro}</div>
-            </div>
-          `;
-        } else {
-          resultadoDiv.innerHTML = `
-            <div class="alert alert-success">
-              <span>✅</span>
-              <div>
-                <div class="result-item">
-                  <span class="result-icon">👤</span>
-                  <span class="result-label">Nome:</span>
-                  <span>${data.nome}</span>
-                </div>
-                <div class="result-item">
-                  <span class="result-icon">🏢</span>
-                  <span class="result-label">Departamento:</span>
-                  <span>${data.departamento}</span>
-                </div>
-              </div>
+              <span>⚠️</span>
+              <div>Tempo limite excedido. Tente novamente.</div>
             </div>
           `;
         }
-      } catch (error) {
-        resultadoDiv.innerHTML = `
-          <div class="alert alert-error">
-            <span>⚠️</span>
-            <div>Erro ao conectar com o servidor. Tente novamente mais tarde.</div>
-          </div>
-        `;
-        console.error("Erro na busca:", error);
-      }
+      }, 10000);
     }
     
     // Máscara de CPF dinâmica
