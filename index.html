@@ -184,7 +184,7 @@
         <input type="text" id="cpf" class="form-control" placeholder="Digite o CPF (com ou sem formatação)" maxlength="14">
       </div>
       
-      <button class="btn" onclick="buscarPesquisador()">
+      <button id="btnBuscar" class="btn">
         <span>🔍</span> Buscar Pesquisador
       </button>
       
@@ -203,50 +203,85 @@
       return cpf;
     }
     
+    function validarCPF(cpf) {
+      cpf = cpf.replace(/\D/g, '');
+      if (cpf.length !== 11) return false;
+      
+      // Verifica dígitos repetidos
+      if (/^(\d)\1{10}$/.test(cpf)) return false;
+      
+      // Validação dos dígitos verificadores
+      let soma = 0;
+      for (let i = 0; i < 9; i++) {
+        soma += parseInt(cpf.charAt(i)) * (10 - i);
+      }
+      let resto = 11 - (soma % 11);
+      const digito1 = resto > 9 ? 0 : resto;
+      
+      soma = 0;
+      for (let i = 0; i < 10; i++) {
+        soma += parseInt(cpf.charAt(i)) * (11 - i);
+      }
+      resto = 11 - (soma % 11);
+      const digito2 = resto > 9 ? 0 : resto;
+      
+      return parseInt(cpf.charAt(9)) === digito1 && parseInt(cpf.charAt(10)) === digito2;
+    }
+    
     function buscarPesquisador() {
       const cpfInput = document.getElementById("cpf");
       const cpf = cpfInput.value.replace(/\D/g, '');
       const resultadoDiv = document.getElementById("resultado");
       
-      // Validação básica (mantida igual)
-      if (cpf.length !== 11) {
-        showError("O CPF deve conter exatamente 11 dígitos numéricos.");
+      if (!validarCPF(cpf)) {
+        showError("CPF inválido. Digite um CPF válido com 11 dígitos.");
         return;
       }
       
       cpfInput.value = formatarCPF(cpf);
       showLoading();
       
-      // Usando Fetch API com tratamento de CORS
-      fetch(`${SCRIPT_URL}?cpf=${cpf}`)
-        .then(response => {
-          if (!response.ok) throw new Error("Erro na rede");
-          return response.json();
-        })
-        .then(data => {
-          if (data.erro) {
-            showError(data.erro);
-          } else {
-            resultadoDiv.innerHTML = `
-              <div class="alert alert-success">
-                <div class="result-item">
-                  <span class="result-icon">👤</span>
-                  <span class="result-label">Nome:</span>
-                  <span>${data.nome}</span>
-                </div>
-                <div class="result-item">
-                  <span class="result-icon">🏢</span>
-                  <span class="result-label">Departamento:</span>
-                  <span>${data.departamento}</span>
-                </div>
-              </div>
-            `;
-          }
-        })
-        .catch(error => {
-          showError("Erro ao buscar dados. Tente novamente.");
-          console.error("Erro:", error);
-        });
+      // Cria um callback único para JSONP
+      const callbackName = 'jsonpCallback_' + Date.now();
+      window[callbackName] = function(data) {
+        delete window[callbackName];
+        handleResponse(data);
+      };
+      
+      // Cria o script tag para JSONP
+      const script = document.createElement('script');
+      script.src = `${SCRIPT_URL}?cpf=${cpf}&callback=${callbackName}`;
+      
+      script.onerror = function() {
+        delete window[callbackName];
+        showError("Erro ao conectar com o servidor. Tente novamente.");
+        script.remove();
+      };
+      
+      document.body.appendChild(script);
+    }
+    
+    function handleResponse(data) {
+      const resultadoDiv = document.getElementById("resultado");
+      
+      if (data.erro) {
+        showError(data.erro);
+      } else {
+        resultadoDiv.innerHTML = `
+          <div class="alert alert-success">
+            <div class="result-item">
+              <span class="result-icon">👤</span>
+              <span class="result-label">Nome:</span>
+              <span>${data.nome || 'Não informado'}</span>
+            </div>
+            <div class="result-item">
+              <span class="result-icon">🏢</span>
+              <span class="result-label">Departamento:</span>
+              <span>${data.departamento || 'Não informado'}</span>
+            </div>
+          </div>
+        `;
+      }
     }
     
     function showLoading() {
@@ -267,7 +302,7 @@
       `;
     }
     
-    // Event listeners (mantidos iguais)
+    // Event listeners
     document.getElementById("cpf").addEventListener("input", function(e) {
       let value = e.target.value.replace(/\D/g, '');
       if (value.length > 11) value = value.substring(0, 11);
@@ -279,6 +314,8 @@
         buscarPesquisador();
       }
     });
+    
+    document.getElementById("btnBuscar").addEventListener("click", buscarPesquisador);
   </script>
 </body>
 </html>
