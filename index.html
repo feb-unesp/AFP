@@ -201,7 +201,7 @@
       </div>
       
       <button class="btn" id="buscarBtn">
-        <span>🔍</span> Buscar Pesquisador
+        <span>��</span> Buscar Pesquisador
       </button>
       
       <button class="btn btn-clear" id="limparBtn">
@@ -212,7 +212,6 @@
     </div>
   </div>
 
-  <!-- JavaScript com modificações mínimas -->
   <script>
     // Elementos DOM
     const cpfInput = document.getElementById("cpf");
@@ -227,7 +226,7 @@
       mask: '000.000.000-00'
     });
     
-    // Funções auxiliares (mantidas intactas)
+    // Funções auxiliares
     function showLoading() {
       resultadoDiv.innerHTML = `
         <div class="alert alert-loading">
@@ -273,8 +272,8 @@
       resultadoDiv.innerHTML = "";
     }
 
-    // Função principal modificada para evitar CORS
-    function buscarPesquisador() {
+    // Função principal para buscar pesquisador
+    async function buscarPesquisador() {
       const cpf = cpfMask.unmaskedValue;
       
       if (!cpf || cpf.length !== 11) {
@@ -284,29 +283,45 @@
 
       showLoading();
       
-      // Usando google.script.run para evitar CORS
-      google.script.run
-        .withSuccessHandler((response) => {
-          if (response.status === 'success') {
-            showResults(response.data);
-          } else {
-            showError(response.message || "Erro ao buscar pesquisador");
+      try {
+        // Substitua pela URL do seu Web App publicado
+        const scriptUrl = 'https://script.google.com/macros/s/AKfycbxmO5CV10z3Gbq1VKyP7e9yXSuGdccOCGF3IGQgykGm_ppXJsb1KjOLgdQ9AtOoLA1z/exec';
+        
+        const response = await fetch(`${scriptUrl}?cpf=${cpf}`, {
+          redirect: 'follow',
+          headers: {
+            'Content-Type': 'application/json'
           }
-        })
-        .withFailureHandler((error) => {
-          showError("Falha na comunicação: " + error.message);
-          // Exemplo de fallback
-          setTimeout(() => {
-            showResults({
-              nome: "Exemplo: João Silva",
-              departamento: "Departamento de Exemplo"
-            });
-          }, 1000);
-        })
-        .buscarPesquisador(cpf);
+        });
+        
+        // Trata redirecionamento do Google Apps Script
+        const finalUrl = response.url.includes('script.googleusercontent.com') 
+          ? response.url 
+          : scriptUrl;
+          
+        const finalResponse = await fetch(finalUrl);
+        const data = await finalResponse.json();
+        
+        if (data.status === 'success') {
+          showResults(data.data);
+        } else {
+          showError(data.message || "Erro ao buscar pesquisador");
+        }
+      } catch (error) {
+        console.error("Erro:", error);
+        showError("Servidor indisponível. Mostrando exemplo...");
+        
+        // Fallback com dados de exemplo após 1 segundo
+        setTimeout(() => {
+          showResults({
+            nome: "Exemplo: João Oliveira",
+            departamento: "Ciência da Computação"
+          });
+        }, 1000);
+      }
     }
     
-    // Event listeners (mantidos intactos)
+    // Event listeners
     buscarBtn.addEventListener("click", buscarPesquisador);
     limparBtn.addEventListener("click", clearFields);
   </script>
