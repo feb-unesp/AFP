@@ -213,12 +213,10 @@
   </div>
 
   <script>
-    // Configurações
     const config = {
-      scriptId: "AKfycbz9wgUaYUZol FacdgRo_BV2uPH0oQ9O6ivLN3gB5sJ1r9MMHnAubv0t1_HUgmGs-KRXj_"
+      scriptId: "AKfycbz9wgUaYUZolFdgRo_BV2uPH0oQ9O6ivLN3gB5sJ1r9MMHnAubv0t1_HUgmGs-KRXj_"
     };
     
-    // Elementos DOM
     const cpfInput = document.getElementById("cpf");
     const nomeInput = document.getElementById("nome");
     const deptoInput = document.getElementById("departamento");
@@ -226,12 +224,10 @@
     const limparBtn = document.getElementById("limparBtn");
     const resultadoDiv = document.getElementById("resultado");
     
-    // Aplicar máscara de CPF
     const cpfMask = IMask(cpfInput, {
       mask: '000.000.000-00'
     });
     
-    // Formatar CPF
     function formatarCPF(cpf) {
       cpf = cpf.replace(/\D/g, '');
       if (cpf.length > 9) {
@@ -240,7 +236,6 @@
       return cpf;
     }
     
-    // Validar CPF
     function validarCPF(cpf) {
       cpf = cpf.replace(/\D/g, '');
       if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
@@ -260,7 +255,6 @@
       return true;
     }
     
-    // Mostrar loading
     function showLoading() {
       resultadoDiv.innerHTML = `
         <div class="alert alert-loading">
@@ -270,7 +264,6 @@
       `;
     }
     
-    // Mostrar erro
     function showError(message) {
       resultadoDiv.innerHTML = `
         <div class="alert alert-error">
@@ -280,7 +273,6 @@
       `;
     }
     
-    // Mostrar resultados
     function showResults(data) {
       nomeInput.value = data.nome || "";
       deptoInput.value = data.departamento || "";
@@ -301,7 +293,6 @@
       `;
     }
     
-    // Limpar campos
     function clearFields() {
       cpfMask.value = "";
       nomeInput.value = "";
@@ -309,7 +300,6 @@
       resultadoDiv.innerHTML = "";
     }
     
-    // Buscar pesquisador usando JSONP
     function buscarPesquisador() {
       const cpf = cpfMask.unmaskedValue;
       
@@ -346,7 +336,6 @@
       document.body.appendChild(script);
     }
     
-    // Event listeners
     cpfInput.addEventListener("keypress", function(e) {
       if (e.key === "Enter") {
         buscarPesquisador();
