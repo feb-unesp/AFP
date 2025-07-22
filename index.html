@@ -215,7 +215,7 @@
   <script>
     // Configurações
     const config = {
-      scriptId: "AKfycbwERRt7pvVa3jG5EH74TlirrTyic4sVMoU88oPLMrdI7NfV-1-Y9BE241N9Mm_BBFo"
+      scriptId: "AKfycbz9wgUaYUZol FacdgRo_BV2uPH0oQ9O6ivLN3gB5sJ1r9MMHnAubv0t1_HUgmGs-KRXj_"
     };
     
     // Elementos DOM
@@ -340,6 +340,9 @@
       
       const script = document.createElement('script');
       script.src = `https://script.google.com/macros/s/${config.scriptId}/exec?cpf=${cpf}&callback=${callbackName}`;
+      script.onerror = function() {
+        showError("Erro ao carregar o script. Verifique o ID da implantação ou a conexão com o servidor.");
+      };
       document.body.appendChild(script);
     }
     
