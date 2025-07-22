@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Consulta de Pesquisadores</title>
   <script src="https://unpkg.com/imask"></script>
-  <!-- SEU CSS ORIGINAL (SEM ALTERAÇÕES) -->
   <style>
     :root {
       --primary: #3498db;
@@ -179,7 +178,6 @@
   </style>
 </head>
 <body>
-  <!-- SEU HTML ORIGINAL (SEM ALTERAÇÕES) -->
   <div class="card">
     <div class="card-header">
       <h1 class="card-title">Consulta de Pesquisadores</h1>
@@ -214,14 +212,9 @@
     </div>
   </div>
 
-  <!-- CORREÇÕES APENAS NO JAVASCRIPT -->
+  <!-- JavaScript com modificações mínimas -->
   <script>
-    // Configuração original
-    const config = {
-      scriptId: "AKfycbxmO5CV10z3Gbq1VKyP7e9yXSuGdccOCGF3IGQgykGm_ppXJsb1KjOLgdQ9AtOoLA1z"
-    };
-    
-    // Elementos DOM (mantidos iguais)
+    // Elementos DOM
     const cpfInput = document.getElementById("cpf");
     const nomeInput = document.getElementById("nome");
     const deptoInput = document.getElementById("departamento");
@@ -229,12 +222,12 @@
     const limparBtn = document.getElementById("limparBtn");
     const resultadoDiv = document.getElementById("resultado");
     
-    // Máscara para CPF (mantida igual)
+    // Máscara para CPF
     const cpfMask = IMask(cpfInput, {
       mask: '000.000.000-00'
     });
     
-    // Funções auxiliares (mantidas iguais)
+    // Funções auxiliares (mantidas intactas)
     function showLoading() {
       resultadoDiv.innerHTML = `
         <div class="alert alert-loading">
@@ -280,8 +273,8 @@
       resultadoDiv.innerHTML = "";
     }
 
-    // CORREÇÃO PRINCIPAL: Função de busca modificada
-    async function buscarPesquisador() {
+    // Função principal modificada para evitar CORS
+    function buscarPesquisador() {
       const cpf = cpfMask.unmaskedValue;
       
       if (!cpf || cpf.length !== 11) {
@@ -291,53 +284,29 @@
 
       showLoading();
       
-      try {
-        // 1. Primeiro teste se a API está respondendo
-        const testUrl = `https://script.google.com/macros/s/${config.scriptId}/exec?cpf=14168033864`;
-        const testResponse = await fetch(testUrl);
-        
-        if (!testResponse.ok) throw new Error("API não disponível");
-        
-        // 2. Se a API responder, faz a busca real
-        const realUrl = `https://script.google.com/macros/s/${config.scriptId}/exec?cpf=${cpf}`;
-        const response = await fetch(realUrl);
-        
-        // Verifica se houve redirecionamento
-        const finalUrl = response.url.includes('script.googleusercontent.com') 
-          ? response.url 
-          : realUrl;
-          
-        const finalResponse = await fetch(finalUrl);
-        const data = await finalResponse.json();
-        
-        if (data.erro) {
-          showError(data.erro);
-        } else {
-          // Se não encontrar dados, mostra exemplo (para demonstração)
-          if (!data.nome) {
+      // Usando google.script.run para evitar CORS
+      google.script.run
+        .withSuccessHandler((response) => {
+          if (response.status === 'success') {
+            showResults(response.data);
+          } else {
+            showError(response.message || "Erro ao buscar pesquisador");
+          }
+        })
+        .withFailureHandler((error) => {
+          showError("Falha na comunicação: " + error.message);
+          // Exemplo de fallback
+          setTimeout(() => {
             showResults({
-              nome: "Exemplo: Ana Silva",
+              nome: "Exemplo: João Silva",
               departamento: "Departamento de Exemplo"
             });
-          } else {
-            showResults(data);
-          }
-        }
-      } catch (error) {
-        console.error("Erro:", error);
-        showError("Servidor indisponível. Mostrando exemplo...");
-        
-        // Fallback com dados de exemplo após 1 segundo
-        setTimeout(() => {
-          showResults({
-            nome: "Exemplo: João Oliveira",
-            departamento: "Ciência da Computação"
-          });
-        }, 1000);
-      }
+          }, 1000);
+        })
+        .buscarPesquisador(cpf);
     }
     
-    // Event listeners (mantidos iguais)
+    // Event listeners (mantidos intactos)
     buscarBtn.addEventListener("click", buscarPesquisador);
     limparBtn.addEventListener("click", clearFields);
   </script>
