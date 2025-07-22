@@ -154,7 +154,7 @@
     }
     
     .alert-error {
-      background-color: #fef0f0;
+      background-color-subtitle: #fef0f0;
       border-left: 4px solid var(--error);
       color: var(--error);
     }
@@ -201,7 +201,7 @@
       </div>
       
       <button class="btn" id="buscarBtn">
-        <span>��</span> Buscar Pesquisador
+        <span>🔍</span> Buscar Pesquisador
       </button>
       
       <button class="btn btn-clear" id="limparBtn">
@@ -284,28 +284,21 @@
       showLoading();
       
       try {
-        // Substitua pela URL do seu Web App publicado
         const scriptUrl = 'https://script.google.com/macros/s/AKfycbxmO5CV10z3Gbq1VKyP7e9yXSuGdccOCGF3IGQgykGm_ppXJsb1KjOLgdQ9AtOoLA1z/exec';
         
         const response = await fetch(`${scriptUrl}?cpf=${cpf}`, {
-          redirect: 'follow',
+          method: 'GET',
           headers: {
             'Content-Type': 'application/json'
           }
         });
-        
-        // Trata redirecionamento do Google Apps Script
-        const finalUrl = response.url.includes('script.googleusercontent.com') 
-          ? response.url 
-          : scriptUrl;
-          
-        const finalResponse = await fetch(finalUrl);
-        const data = await finalResponse.json();
+
+        const data = await response.json();
         
         if (data.status === 'success') {
           showResults(data.data);
         } else {
-          showError(data.message || "Erro ao buscar pesquisador");
+          showError(data.message || "Pesquisador não encontrado");
         }
       } catch (error) {
         console.error("Erro:", error);
